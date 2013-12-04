@@ -1,0 +1,9 @@
+#!/bin/bash
+/var/www/miq/vmdb/continuous_maint/periodic_vacuum_full_tables &
+
+
+# Sample file that can be placed into cron.weekly to simplify activating weekly VMDB maintenance
+# file name begins with sequence of 'z's to position script as among the last to be called
+# so as not to interfere with scripts already in place.
+
+# Tom Hennessy - Red Hat, Inc 2014-08-12
