@@ -1,0 +1,224 @@
+#!/bin/bash
+#
+# Copyright (c) 2012, ManageIQ, Inc. All rights reserved.
+#
+#  $Rev:: 39708                $:  Revision of last commit
+#  $Author:: thennessy         $:  Author of last commit
+#  $Date:: 2012-10-10 00:19:29#$:  Date of last commit 
+
+STANDARD_OUTPUT_DIRECTORY="/var/www/miq/vmdb/log/" 
+
+RESTORE_TIME=$(date +%Y%m%d_%H%M%S)
+RESTORE_LOG="$STANDARD_OUTPUT_DIRECTORY/miq_restore_log_$RESTORE_TIME"
+RESTORE_STDERR="$STANDARD_OUTPUT_DIRECTORY/miq_restore_stderr_$RESTORE_TIME.log"
+
+rm -f $STANDARD_OUTPUT_DIRECTORY/miq_restore_stderr* $STANDARD_OUTPUT_DIRECTORY/evm_statistics*after_restore.log
+
+#============
+# SESSION_TOLERANCE is added as a means of easily specifiying an upper bound
+# as to the number of active sessions that can be tolerated by the restore
+# process.  If the number of active postgresql sessions does not exceed this value,
+# then the restore proceeds, otherwise if this number is exceeded then the restore is terminated.
+# this is intended as a failsafe to prevent the accidental restore of a backup file while
+# the database may be in use.  The SESSION_TOLERANCE value should be in the low single
+# digits (eg, 1,2) so that the existence of active postgresql daemons does not prevent the
+# restore process from running, but a larger number suggesting that the database is in use
+# by others will prevent the restore from being initiated.
+
+if [ $# -gt 0 ]       # if any command line option is provided
+  then
+      SESSION_TOLERANCE=$1           # then take the first, assumed to be a number and make it the SESSION_TOLERANCE value
+  else
+      SESSION_TOLERANCE=2
+fi 
+         
+echo "miq_vmdb_background_restore initiated with SESSION_TOLERANCE value of '$SESSION_TOLERANCE'"
+echo "miq_vmdb_background_restore initiated with SESSION_TOLERANCE value of '$SESSION_TOLERANCE'" >> $RESTORE_LOG
+#============  
+OTHER_SESSION_COUNT=0
+#cd /var/www/miq/vmdb/log
+
+
+
+PG_SESSION_COUNTS="$STANDARD_OUTPUT_DIRECTORY/pg_session_counts.log"
+# RUN psql command to determine if any other sessions are active.  
+# If they are, then terminate the backup procedure with a message
+echo "Postgres reports the following number of sessions active" >> $RESTORE_LOG
+echo "Postgres reports the following number of sessions active" 
+
+rm -f $PG_SESSION_COUNTS       # remove any previous output such as from backup run
+
+/usr/local/pgsql/bin/psql -h localhost -U root vmdb_production -c "SELECT count(*) from pg_stat_activity" -L $PG_SESSION_COUNTS
+# preserve output of postgress session counts
+
+cat $PG_SESSION_COUNTS  >> $RESTORE_LOG
+
+# then process with awk to indicate if backup should continue
+gawk -f pg_session_counts.awk $PG_SESSION_COUNTS
+OTHER_SESSION_COUNT=$?
+echo "awk returned count of postgresql sessions other than this is '$OTHER_SESSION_COUNT' "
+echo "awk returned count of postgresql sessions other than this is '$OTHER_SESSION_COUNT' " >> $RESTORE_LOG
+if [ $OTHER_SESSION_COUNT -le $SESSION_TOLERANCE ]
+#if   gawk -f pg_session_counts.awk $PG_SESSION_COUNTS  ;
+  then
+      echo " OTHER_SESSION_COUNT value of '$OTHER_SESSION_COUNT' does not exceed SESSION_TOLERANCE value '$SESSION_TOLERANCE'" 
+      echo " OTHER_SESSION_COUNT value of '$OTHER_SESSION_COUNT' does not exceed SESSION_TOLERANCE value '$SESSION_TOLERANCE'" >>$RESTORE_LOG
+#      echo "Postgres reports no other sessions active" >> $RESTORE_LOG
+#      echo "Postgres reports no other sessions active"
+      echo "RESTORE will proceed" >> $RESTORE_LOG
+      echo "RESTORE will proceed"
+  else
+      echo "* * * CRITICAL ERROR * * * " >> $RESTORE_LOG
+      echo " OTHER_SESSION_COUNT value of '$OTHER_SESSION_COUNT' exceeds SESSION_TOLERANCE value '$SESSION_TOLERANCE'" >>$RESTORE_LOG     
+#      echo "* Postgres reports other sessions are active" >> $RESTORE_LOG     
+      echo "* Terminate all other sessions to VMDB and try again" >> $RESTORE_LOG 
+      echo "* RESTORE is terminating NO CHANGE TO THE VMDB HAS BEEN MADE FROM THE RESTORE" >> $RESTORE_LOG
+      echo "* * * END CRITICAL ERROR MESSAGE" >> $RESTORE_LOG
+      
+      echo "* * * CRITICAL ERROR * * * " 
+      echo " OTHER_SESSION_COUNT value of '$OTHER_SESSION_COUNT' exceeds SESSION_TOLERANCE value '$SESSION_TOLERANCE'"       
+#      echo "* Postgres reports other sessions are active" 
+      echo "* Terminate all other sessions to VMDB and try again" 
+      echo "* RESTORE is terminating NO CHANGE TO THE VMDB HAS BEEN MADE FROM THE RESTORE"       
+      echo "* * * END CRITICAL ERROR MESSAGE" 
+      exit 1     # indicate non-normal return from miq_vmdb_backup script
+fi      
+
+
+if [ -e $STANDARD_OUTPUT_DIRECTORY/miq_last_backup_file_name ] ;         # determine if a file expected to contain the name of the last VMDB backup file exists
+	then
+		read -r VMDB_BACKUP_FILE < $STANDARD_OUTPUT_DIRECTORY/miq_last_backup_file_name
+		echo "Restore will proceed using '$VMDB_BACKUP_FILE' as backup from which to restore"
+		echo "Restore will proceed using '$VMDB_BACKUP_FILE' as backup from which to restore" >> $RESTORE_LOG
+		echo " = = = = = = = = = = = "
+		ls -l $VMDB_BACKUP_FILE >> $RESTORE_LOG
+		echo " = = = = = = = = = = = "
+		df -h >> $RESTORE_LOG
+		echo " = = = = = = = = = = = "
+
+	else
+		echo " No backup file detected in '$STANDARD_OUTPUT_DIRECTORY' directory, Restore is aborted"
+		echo " No backup file detected in '$STANDARD_OUTPUT_DIRECTORY' directory, Restore is aborted" >>$RESTORE_LOG
+				echo " = = = = = = = = = = = "
+		echo " populate name of backup file to use into '$STANDARD_OUTPUT_DIRECTORY/miq_last_backup_file_name' and retry"
+		echo " populate name of backup file to use into '$STANDARD_OUTPUT_DIRECTORY/miq_last_backup_file_name' and retry" >> $RESTORE_LOG
+		echo " = = = = = = = = = = = "
+		echo " populate name of backup file to use into '$STANDARD_OUTPUT_DIRECTORY/miq_last_backup_file_name' and retry" >> $RESTORE_STDERR
+		echo " = = = = = = = = = = = "		
+		exit 1
+fi
+
+#echo "environment variable BACKUP_TIME = '$BACKUP_TIME'"
+#echo "environment varialble VMDB_BACKUP_FILE = '$VMDB_BACKUP_FILE'"
+#echo "environment variable RESTORE_TIME = '$RESTORE_TIME'"
+
+ if [ -f $VMDB_BACKUP_FILE ] ;
+	then
+	echo "restore from file $VMDB_BACKUP_FILE initiated"
+	echo "restore begin time is $(date)" >> $RESTORE_LOG
+	echo " = = = = = = = = = = = = = = " >> $RESTORE_LOG
+	echo "restore begin time is $(date)" 
+#	rm -f $STANDARD_OUTPUT_DIRECTORY/miq_restore_stderr* $STANDARD_OUTPUT_DIRECTORY/evm_statistics*after_restore.log
+
+       echo "Posgresql service being stopped in preparation for VMDB restore at $(date)."
+       echo "Posgresql service being stopped in preparation for VMDB restore at $(date)." >>$RESTORE_LOG
+
+       service postgresql stop >>$RESTORE_LOG 2>&1   # stop postgresql to clear any sessions that might get in the way of the restore
+	sleep 60                   # wait 60 seconds for postgresql to quiesce
+
+       echo "Posgresql service being restarted in preparation for VMDB restore at $(date)."
+       echo "Posgresql service being restarted in preparation for VMDB restore at $(date)." >>$RESTORE_LOG
+	service postgresql start >>$RESTORE_LOG 2>&1    # restart postgresql service
+	sleep 10                   # wait 10 seconds for service to start
+	
+	psql -U root vmdb_production -ec "\timing" >> $RESTORE_LOG 2>&1
+	POSTGRES_AVAILABLE=$?
+	until [ $POSTGRES_AVAILABLE -eq 0 ]
+		do
+			echo "at $(date) Postgresql service responds '$POSTGRES_AVAILABLE' not yet accepting connections, waiting 5 seconds and retrying "
+			echo "at $(date) Postgresql service responds '$POSTGRES_AVAILABLE' not yet accepting connections, waiting 5 seconds and retrying " >> $RESTORE_LOG
+			sleep 5
+			psql -U root vmdb_production -ec "\timing" >> $RESTORE_LOG 2>&1
+			POSTGRES_AVAILABLE=$?
+		done
+ 
+
+	nohup gzip -cdf $VMDB_BACKUP_FILE | psql -h localhost -f - -U postgres -e -L $RESTORE_LOG 2>>$RESTORE_STDERR &
+       echo "starting background restore:-> nohup gzip -cdf $VMDB_BACKUP_FILE | psql -h localhost -f - -U postgres -e -L $RESTORE_LOG 2>>$RESTORE_STDERR " >> $RESTORE_LOG
+	echo " background restore initiated as process $!" >> $RESTORE_LOG
+       echo "starting background restore:-> nohup gzip -cdf $VMDB_BACKUP_FILE | psql -h localhost -f - -U postgres -e -L $RESTORE_LOG 2>>$RESTORE_STDERR " 
+	echo " background restore initiated as process $!" 
+
+
+	PG_RESTORE_PID=$!                         # capture RESTORE_PID ID                
+	wait $PG_RESTORE_PID                      # wait for process to complete
+	PG_RESTORE_EXIT_STATUS=$?                 # capture exit stat from PG restore process
+ 	echo " PG RESTORE process with PID = $PG_RESTORE_PID completed with exit status = $PG_RESTORE_EXIT_STATUS" >> $RESTORE_LOG  
+	echo " PG RESTORE process with PID = $PG_RESTORE_PID completed with exit status = $PG_RESTORE_EXIT_STATUS"
+
+	if [ $PG_RESTORE_EXIT_STATUS -eq 0 ] ;
+		then
+		echo " = = = = = = = = = = = = = = " >> $RESTORE_LOG
+		echo " = = = = = = = = = = = = = = " >> $RESTORE_STDERR
+		echo "restore function has completed at $(date) beginning analyze for all tables" >> $RESTORE_LOG
+		echo "restore function has completed at $(date) beginning analyze for all tables" 
+		psql -h localhost -d vmdb_production -U root vmdb_production -c "analyze verbose;" >> $RESTORE_LOG 2>&1
+		echo " = = = = = = = = = = = = = = " >> $RESTORE_LOG
+		echo "beginning after restore miq_evm_statistics_only_after_restore"
+		./miq_evm_statistics_only_after_restore
+		#cd /var/www/miq/vmdb/log
+		echo "analyze of all tables completed at $(date)" >> $RESTORE_LOG
+		echo "restore of miq vmdb started at $RESTORE_TIME" >> $RESTORE_LOG
+		echo " = = = = = = = = = = = = = = " >> $RESTORE_LOG
+		echo "analyze of all tables completed at $(date)" 
+		echo "restore started at $RESTORE_TIME "
+		df -h >> $RESTORE_LOG
+		echo " = = = = = = = = = = = = = = " >> $RESTORE_LOG
+		echo " + + + "
+		echo " + + + Database Restore and full Analyze of all tables is complete"
+		echo " + + + Post restore activities ( eg, restart appliances,etc ) can now begin "
+		echo " + + + $STANDARD_OUTPUT_DIRECTORY/miq_restore_related_logs_$RESTORE_TIME.gz contains all restore related logs"
+		echo " + + +  "
+
+		rm -f $STANDARD_OUTPUT_DIRECTORY/miq_last_successfully_restored_backup_name
+		mv $STANDARD_OUTPUT_DIRECTORY/miq_last_backup_file_name $STANDARD_OUTPUT_DIRECTORY/miq_last_successfully_restored_backup_name
+		# above sequence create to prevent accidental restore at some future time
+
+		pushd /var/www/miq/vmdb/log
+		tar -czf /var/www/miq/vmdb/log/miq_restore_related_logs_$RESTORE_TIME.gz *miq_restore* evm_statistics*after_restore.log
+		popd
+
+		else
+		echo "restore of $VMDB_BACKUP_FILE not successful"
+		echo "restore of $VMDB_BACKUP_FILE not successful" >> $RESTORE_STDERR
+       	echo "check $RESTORE_STDERR in vmdb/log directory"
+       	echo "check $RESTORE_STDERR in vmdb/log directory" >> $RESTORE_STDERR
+		echo " = = = = = = = = = = = = = = " >> $RESTORE_STDERR
+		df -h >> $RESTORE_LOG
+		echo " = = = = = = = = = = = = = = " >> $RESTORE_STDERR
+	
+		pushd /var/www/miq/vmdb/log
+		tar -czf miq_restore_related_logs_$RESTORE_TIME.gz $RESTORE_LOG $RESTORE_STDERR evm_statistics*after_restore.log
+		popd
+
+		echo " + + +"
+		echo " + + + /var/www/miq/vmdb/log/miq_restore_related_logs_$RESTORE_TIME.gz contains all restore related logs"
+		echo " + + +"
+		exit 1
+		
+	fi
+ else	
+	echo "($VMDB_BACKUP_FILE:?' -> 'file does not exist')"
+	echo "($VMDB_BACKUP_FILE:?' -> 'file does not exist')" >> $RESTORE_STDERR
+	echo "restore has not initiated, set VMDB_BACKUP_FILE attribute to name of backup file and retry"
+	echo "restore has not initiated, set VMDB_BACKUP_FILE attribute to name of backup file and retry" >> $RESTORE_STDERR
+
+       pushd /var/www/miq/vmdb/log
+	tar -czf miq_restore_related_logs_$RESTORE_TIME.gz $RESTORE_LOG $RESTORE_STDERR
+	popd
+
+	echo " + + +"
+	echo " + + + /var/www/miq/vmdb/log/miq_restore_related_logs_$RESTORE_TIME.gz contains all restore related logs"
+	echo " + + +"
+	exit 1
+fi
