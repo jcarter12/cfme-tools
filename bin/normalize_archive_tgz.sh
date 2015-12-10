@@ -1,0 +1,1 @@
+../shell_scripts/normalize_archive_tgz.sh

@@ -1,0 +1,10 @@
+tar -zxf %1
+md log
+copy var\www\miq\vmdb\log\*.* log\*.*
+for %%i in (GUID VERSION BUILD) do copy var\www\miq\vmdb\%%i log\*.*
+copy var\lib\pgsql\data\*.* log\*.*
+rm -fr var
+tar -acf %1.zip log\
+rm -fr log
+
+

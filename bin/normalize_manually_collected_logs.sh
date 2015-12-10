@@ -1,0 +1,1 @@
+../shell_scripts/normalize_manually_collected_logs.sh

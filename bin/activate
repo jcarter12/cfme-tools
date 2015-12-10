@@ -1,0 +1,27 @@
+# This file must be used with "source bin/activate" *from bash*
+# you cannot run it directly
+
+deactivate(){
+	if [ -n "$_OLD_PATH" ]; then
+		PATH=$_OLD_PATH
+		export PATH
+		unset _OLD_PATH
+	fi
+	if [ -n "$_OLD_PS1" ]; then
+		PS1=$_OLD_PS1
+                export PS1
+                unset _OLD_PS1
+	fi
+}
+
+if [ $_OLD_PATH ] || [ $_OLD_PS1 ]; then
+	echo Already in cfme, will not clobber old path	
+else
+	_OLD_PATH=$PATH
+	PATH="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd):$PATH"
+	export PATH
+
+	_OLD_PS1=$PS1
+	PS1="[cfme] $PS1"
+	export PS1
+fi

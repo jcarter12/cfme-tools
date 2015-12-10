@@ -1,0 +1,1 @@
+../shell_scripts/process_appliance_log_bundle_v4.sh

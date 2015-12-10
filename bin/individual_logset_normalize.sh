@@ -1,0 +1,1 @@
+../shell_scripts/individual_logset_normalize.sh

@@ -1,0 +1,1 @@
+../shell_scripts/extract_logs_by_zone.sh
