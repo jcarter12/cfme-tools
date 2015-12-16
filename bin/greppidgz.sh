@@ -1,1 +1,1 @@
-../shell_scripts/greppidgz.sh
+../bash/greppidgz.sh

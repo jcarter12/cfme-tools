@@ -1,1 +1,1 @@
-../shell_scripts/appliance_level_normalize.sh
+../bash/appliance_level_normalize.sh

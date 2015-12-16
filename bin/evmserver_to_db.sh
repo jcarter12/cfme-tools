@@ -1,1 +1,1 @@
-../shell_scripts/evmserver_to_db.sh
+../bash/evmserver_to_db.sh

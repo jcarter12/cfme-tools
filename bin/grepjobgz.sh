@@ -1,1 +1,1 @@
-../shell_scripts/grepjobgz.sh
+../bash/grepjobgz.sh

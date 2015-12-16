@@ -1,1 +1,1 @@
-../shell_scripts/normalize_current_tgz.sh
+../bash/normalize_current_tgz.sh

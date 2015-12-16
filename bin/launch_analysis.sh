@@ -1,1 +1,1 @@
-../shell_scripts/launch_analysis.sh
+../bash/launch_analysis.sh

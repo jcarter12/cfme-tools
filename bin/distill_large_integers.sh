@@ -1,1 +1,1 @@
-../shell_scripts/distill_large_integers.sh
+../bash/distill_large_integers.sh

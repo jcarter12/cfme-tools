@@ -1,1 +1,1 @@
-../shell_scripts/process_top_output.sh
+../bash/process_top_output.sh

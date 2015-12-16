@@ -1,1 +1,1 @@
-../shell_scripts/extract_logs_v5a.sh
+../bash/extract_logs_v5a.sh

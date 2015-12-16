@@ -1,1 +1,1 @@
-../shell_scripts/grepjob.sh
+../bash/grepjob.sh

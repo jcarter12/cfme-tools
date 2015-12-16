@@ -1,1 +1,1 @@
-../shell_scripts/normalize_batch_collected_logs.sh
+../bash/normalize_batch_collected_logs.sh

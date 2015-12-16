@@ -1,1 +1,1 @@
-../shell_scripts/process_vmstat_output.sh
+../bash/process_vmstat_output.sh

@@ -1,1 +1,1 @@
-../shell_scripts/top_reports.sh
+../bash/top_reports.sh

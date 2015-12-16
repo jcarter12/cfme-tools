@@ -1,1 +1,1 @@
-../shell_scripts/greppid.sh
+../bash/greppid.sh

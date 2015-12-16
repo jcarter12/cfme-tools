@@ -1,1 +1,1 @@
-../shell_scripts/process_production_log.sh
+../bash/process_production_log.sh

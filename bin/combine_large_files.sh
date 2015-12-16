@@ -1,1 +1,1 @@
-../shell_scripts/combine_large_files.sh
+../bash/combine_large_files.sh

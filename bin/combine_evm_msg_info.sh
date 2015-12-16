@@ -1,1 +1,1 @@
-../shell_scripts/combine_evm_msg_info.sh
+../bash/combine_evm_msg_info.sh

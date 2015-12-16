@@ -1,1 +1,1 @@
-../shell_scripts/zone_level_normalize.sh
+../bash/zone_level_normalize.sh

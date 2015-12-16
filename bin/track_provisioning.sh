@@ -1,1 +1,1 @@
-../shell_scripts/track_provisioning.sh
+../bash/track_provisioning.sh

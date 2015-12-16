@@ -1,1 +1,1 @@
-../shell_scripts/hourly_healthcheck.sh
+../bash/hourly_healthcheck.sh
