@@ -1,0 +1,11 @@
+#!/bin/bash
+/var/www/miq/vmdb/continuous_maint/hourly_reindex_miq_queue_table & 
+/var/www/miq/vmdb/continuous_maint/hourly_reindex_miq_servers_table &
+/var/www/miq/vmdb/continuous_maint/hourly_reindex_miq_workers_table &
+/var/www/miq/vmdb/continuous_maint/metrics_tables_continuous_pg_maint_cmd &
+
+# Sample file that can be placed into cron.hourly to simplify activating hourly VMDB maintenance
+# file name begins with sequence of 'z's to position script as among the last to be called
+# so as not to interfere with scripts already in place.
+
+# Tom Hennessy - Red Hat, Inc 2014-08-12
