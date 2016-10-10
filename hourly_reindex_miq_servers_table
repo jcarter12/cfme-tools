@@ -1,0 +1,16 @@
+# # # # # # # #
+# this script is intended to reindex the miq_servers table hourly
+# # # # # # # #
+#
+# Tom Hennessy - 2014-01-08  Red Hat, Inc.
+#
+# path_to_psql="/usr/local/bin/psql"                         # Use this path for CFME 2.0
+#path_to_psql="/opt/rh/postgresql92/root/usr/bin/psql"         # Use this path for CFME 3.x 
+path_to_psql="psql"
+#
+#
+echo "current time is $(date) -> target for reindex is 'miq_servers' table " >> /var/www/miq/vmdb/log/hourly_continuous_pg_maint_stdout.log
+#/usr/local/bin/psql -h localhost vmdb_production -c "REINDEX TABLE miq_servers "  >> /var/www/miq/vmdb/log/hourly_continuous_pg_maint_stdout.log 2>&1
+scl enable postgresql92 -- $path_to_psql vmdb_production -a -c "REINDEX TABLE miq_servers "  >> /var/www/miq/vmdb/log/hourly_continuous_pg_maint_stdout.log 2>&1
+echo "REINDEX table miq_servers completed at $(date)" >> /var/www/miq/vmdb/log/hourly_continuous_pg_maint_stdout.log
+echo "=================" >> /var/www/miq/vmdb/log/hourly_continuous_pg_maint_stdout.log

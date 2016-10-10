@@ -1,0 +1,36 @@
+# # # # # # # #
+# this script is created to address the situation where the index set for realtime
+# C&U tables are not being deleted/removed removed from metrics_* tables in any
+# environment running the CloudForms Management Engine 2.0 or 3.x  code.
+# this code addresses the issue continuously by truncating the table that is 
+# 23 hours old so that when it is empty (4 hour default retention period) both
+# base table and indices are emptied and reset preventing the slow bloat of the
+# index set which otherwise happens.
+# this is expected to to installed and execute on only one appliance in the  
+# environment where the VMDB is being hosted. 
+# # # # # # # #
+
+# Tom Hennessy - 2014-01-08  Red Hat, Inc.
+
+# Last modified 2014-08-12 Tom Hennessy, Red Hat, Inc.
+# -  added truncate query as commented text in case it should be needed
+# -  changed output to *.log file so that logrotate manages the output file.
+#
+
+# path_to_psql="/usr/local/bin/"                         # Use this path for CFME 2.0
+#path_to_psql="/opt/rh/postgresql92/root/usr/bin/psql"         # Use this path for CFME 3.x 
+path_to_psql="psql"
+
+
+echo "current time is $(date) -> target for REINDEX TABLE is metrics_$(date -u +"%H" --date='+1 hours ' ) " >> /var/www/miq/vmdb/log/continuous_pg_maint_stdout.log 
+#/usr/local/bin/psql -h localhost vmdb_production -a -c "REINDEX TABLE metrics_$(date -u +"%H" --date='+1 hours ' ) "  >> /var/www/miq/vmdb/log/continuous_pg_maint_stdout.log 2>&1
+
+# TRUNCATE QUERY IS COMMENTED OUT AS IT IS NOT GENERALLY NEEDED BUT IS LEFT AS A COMMENT TO FACILITATE ITS USE SHOULD IT BECOME NECESSARY
+
+#$path_to_psql  vmdb_production -a -c "TRUNCATE TABLE metrics_$(date -u +"%H" --date='+1 hours ' ) "  >> /var/www/miq/vmdb/log/continuous_pg_maint_stdout.log 2>&1
+#echo "TRUNCATE TABLE completed at $(date)" >> /var/www/miq/vmdb/log/continuous_pg_maint_stdout.log
+
+scl enable postgresql92 -- $path_to_psql  vmdb_production -a -c "REINDEX TABLE metrics_$(date -u +"%H" --date='+1 hours ' ) "  >> /var/www/miq/vmdb/log/continuous_pg_maint_stdout.log 2>&1
+
+echo "REINDEX TABLE completed at $(date)" >> /var/www/miq/vmdb/log/continuous_pg_maint_stdout.log
+echo "=================" >> /var/www/miq/vmdb/log/continuous_pg_maint_stdout.log

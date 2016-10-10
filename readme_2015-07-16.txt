@@ -1,0 +1,8 @@
+This readme.txt file is created with the July 16, 2015 revised version of this set of scripts.
+
+If this file exists in the 'continuous_maint' directory that indicates that the
+materials in that directory have been reviewed and revised on or before 
+July 16, 2015.
+
+Tom Hennessy
+Red Hat, Inc.
